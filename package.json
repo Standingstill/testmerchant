@@ -1,0 +1,27 @@
+{
+  "name": "testmerchant",
+  "version": "1.0.0",
+  "description": "Sample single-product merchant site for EnsureBack integration testing",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [
+    "stripe",
+    "checkout",
+    "ensureback",
+    "merchant"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "stripe": "^14.24.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}
