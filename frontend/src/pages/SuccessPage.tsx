@@ -17,7 +17,7 @@ function SuccessPage() {
   const location = useLocation();
   const params = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const orderId = params.get('orderId');
-  const paymentIntentId = params.get('payment_intent');
+  const sessionId = params.get('session_id');
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -92,8 +92,8 @@ function SuccessPage() {
               <span className="font-mono text-xs text-slate-200">{orderId ?? '—'}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span>Payment intent</span>
-              <span className="font-mono text-xs text-slate-200">{paymentIntentId ?? order?.stripePaymentIntentId ?? '—'}</span>
+              <span>Stripe session</span>
+              <span className="font-mono text-xs text-slate-200">{sessionId ?? '—'}</span>
             </div>
             <div className="flex items-center justify-between">
               <span>Product</span>

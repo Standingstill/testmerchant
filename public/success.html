@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payment Successful - Test Merchant Store</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-slate-100 min-h-screen">
+    <main class="max-w-2xl mx-auto px-6 py-16">
+      <div class="bg-white rounded-2xl shadow-lg p-10 text-center space-y-6">
+        <div class="mx-auto h-16 w-16 rounded-full bg-emerald-100 flex items-center justify-center">
+          <span class="text-emerald-600 text-4xl">✓</span>
+        </div>
+        <h1 class="text-3xl font-bold text-slate-900">Payment successful!</h1>
+        <p class="text-slate-600">
+          Thank you for your purchase. Your order has been received and is ready for EnsureBack testing.
+        </p>
+        <dl class="grid grid-cols-1 gap-4 text-left">
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+            <dt class="text-xs uppercase tracking-wide text-slate-500">Order ID</dt>
+            <dd id="order-id" class="mt-1 font-mono text-sm text-slate-900">Loading...</dd>
+          </div>
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+            <dt class="text-xs uppercase tracking-wide text-slate-500">Stripe Session ID</dt>
+            <dd id="session-id" class="mt-1 font-mono text-sm text-slate-900">Loading...</dd>
+          </div>
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+            <dt class="text-xs uppercase tracking-wide text-slate-500">Current Status</dt>
+            <dd id="order-status" class="mt-1 font-semibold text-emerald-600">Waiting for webhook...</dd>
+          </div>
+        </dl>
+        <a
+          href="/"
+          class="inline-block mt-6 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-500"
+        >
+          Back to store
+        </a>
+      </div>
+    </main>
+
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const orderId = params.get('orderId');
+      const sessionId = params.get('session_id');
+
+      const orderIdEl = document.getElementById('order-id');
+      const sessionIdEl = document.getElementById('session-id');
+      const statusEl = document.getElementById('order-status');
+
+      if (orderId) {
+        orderIdEl.textContent = orderId;
+      } else {
+        orderIdEl.textContent = 'Unknown order';
+      }
+
+      if (sessionId) {
+        sessionIdEl.textContent = sessionId;
+      } else {
+        sessionIdEl.textContent = 'Unavailable';
+      }
+
+      async function refreshStatus() {
+        try {
+          const response = await fetch('/orders');
+          const orders = await response.json();
+          const order = orders.find((entry) => entry.orderId === orderId);
+
+          if (order) {
+            statusEl.textContent = order.status;
+            statusEl.classList.toggle('text-emerald-600', order.status === 'paid' || order.status === 'released');
+            statusEl.classList.toggle('text-orange-500', order.status === 'pending');
+            statusEl.classList.toggle('text-rose-600', order.status === 'refunded');
+          }
+        } catch (err) {
+          statusEl.textContent = 'Unable to load status';
+          statusEl.classList.remove('text-emerald-600');
+          statusEl.classList.add('text-rose-600');
+        }
+      }
+
+      if (orderId) {
+        refreshStatus();
+        setInterval(refreshStatus, 4000);
+      }
+    </script>
+  </body>
+</html>
