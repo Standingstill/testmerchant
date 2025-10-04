@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test Merchant Store</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-slate-100 min-h-screen">
+    <header class="bg-white shadow-sm">
+      <div class="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+        <h1 class="text-2xl font-semibold text-slate-900">Test Merchant Store</h1>
+        <p class="text-sm text-slate-500">EnsureBack Checkout Demo</p>
+      </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-6 py-12">
+      <section class="bg-white rounded-2xl shadow-lg p-8 flex flex-col gap-6 md:flex-row md:items-center">
+        <div class="flex-1">
+          <h2 class="text-3xl font-bold text-slate-900">Test Headphones</h2>
+          <p class="mt-4 text-slate-600">
+            Experience immersive, crystal-clear sound with our premium over-ear headphones.
+            This demo product powers the EnsureBack escrow testing flow.
+          </p>
+          <ul class="mt-6 space-y-2 text-slate-600">
+            <li>• Studio-grade sound quality</li>
+            <li>• Active noise cancellation</li>
+            <li>• Comfortable memory-foam cushions</li>
+          </ul>
+          <p class="mt-8 text-3xl font-semibold text-indigo-600">$99.00</p>
+        </div>
+        <div class="w-full md:w-80">
+          <form id="checkout-form" class="space-y-4 bg-slate-50 p-6 rounded-xl border border-slate-200">
+            <label class="block text-sm font-medium text-slate-700" for="email">Email address</label>
+            <input
+              id="email"
+              type="email"
+              name="email"
+              class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="you@example.com"
+              required
+            />
+            <button
+              id="buy-now"
+              type="submit"
+              class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Buy Now
+            </button>
+            <p id="message" class="text-sm text-center text-red-500 hidden"></p>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <footer class="max-w-4xl mx-auto px-6 pb-8 text-sm text-slate-500">
+      <p>
+        Use Stripe test card <span class="font-semibold">4242 4242 4242 4242</span> with any future expiration date and CVC
+        for demo payments.
+      </p>
+    </footer>
+
+    <script>
+      const form = document.getElementById('checkout-form');
+      const message = document.getElementById('message');
+      const buyButton = document.getElementById('buy-now');
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        message.classList.add('hidden');
+        buyButton.disabled = true;
+        buyButton.textContent = 'Creating checkout...';
+
+        const email = document.getElementById('email').value;
+
+        try {
+          const response = await fetch('/create-checkout-session', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email }),
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Unable to start checkout.');
+          }
+
+          const data = await response.json();
+          window.location.href = data.url;
+        } catch (err) {
+          message.textContent = err.message;
+          message.classList.remove('hidden');
+          buyButton.disabled = false;
+          buyButton.textContent = 'Buy Now';
+        }
+      });
+    </script>
+  </body>
+</html>
