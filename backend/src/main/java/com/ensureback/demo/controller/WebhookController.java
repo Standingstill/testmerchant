@@ -31,10 +31,10 @@ public class WebhookController {
     private final String webhookSecret;
 
     public WebhookController(OrderRepository orderRepository,
-                             @Value("${stripe.webhook.secret}") String webhookSecret) {
+                             @Value("${stripe.webhook.secret:}") String webhookSecret) {
         this.orderRepository = orderRepository;
         if (webhookSecret == null || webhookSecret.isBlank()) {
-            throw new IllegalStateException("Stripe webhook secret must be configured (STRIPE_WEBHOOK_SECRET)");
+            throw new IllegalStateException("Stripe webhook secret missing. Set stripe.webhook.secret in application.properties or STRIPE_WEBHOOK_SECRET in env.");
         }
         this.webhookSecret = webhookSecret;
     }
