@@ -7,6 +7,7 @@ import com.stripe.exception.SignatureVerificationException;
 import com.stripe.model.Event;
 import com.stripe.model.EventDataObjectDeserializer;
 import com.stripe.model.PaymentIntent;
+import com.stripe.model.checkout.Session;
 import com.stripe.net.Webhook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +47,7 @@ public class WebhookController {
         log.info("Received Stripe webhook event: {}", event.getType());
 
         switch (event.getType()) {
-            case "payment_intent.succeeded" -> handlePaymentSucceeded(event);
+            case "checkout.session.completed" -> handleCheckoutCompleted(event);
             case "payment_intent.payment_failed" -> handlePaymentFailed(event);
             default -> log.debug("Unhandled event type: {}", event.getType());
         }
@@ -54,19 +55,18 @@ public class WebhookController {
         return ResponseEntity.ok("received");
     }
 
-    private void handlePaymentSucceeded(Event event) {
+    private void handleCheckoutCompleted(Event event) {
         EventDataObjectDeserializer dataObjectDeserializer = event.getDataObjectDeserializer();
         Optional<Object> dataObject = dataObjectDeserializer.getObject().map(Object.class::cast);
         if (dataObject.isEmpty()) {
-            log.warn("Unable to deserialize payment_intent.succeeded event payload");
+            log.warn("Unable to deserialize checkout.session.completed event payload");
             return;
         }
-
-        PaymentIntent paymentIntent = (PaymentIntent) dataObject.get();
-        Map<String, String> metadata = paymentIntent.getMetadata();
+        Session session = (Session) dataObject.get();
+        Map<String, String> metadata = session.getMetadata();
         String orderIdValue = metadata.get("orderId");
         if (orderIdValue == null) {
-            log.warn("payment_intent.succeeded missing orderId metadata");
+            log.warn("checkout.session.completed missing orderId metadata");
             return;
         }
 
@@ -74,20 +74,18 @@ public class WebhookController {
         Order order = orderRepository.findById(orderId)
                 .orElseGet(() -> new Order(orderId,
                         metadata.getOrDefault("productName", "Premium Wireless Headphones"),
-                        Integer.parseInt(metadata.getOrDefault("amount", "0")),
-                        paymentIntent.getId(),
+                        session.getAmountTotal() != null ? session.getAmountTotal().intValue() : 0,
+                        null,
                         OrderStatus.PENDING,
                         Instant.now()));
 
         order.setStatus(OrderStatus.PAID);
-        order.setStripePaymentIntentId(paymentIntent.getId());
-        if (paymentIntent.getAmountReceived() != null) {
-            order.setAmount(paymentIntent.getAmountReceived().intValue());
-        } else if (paymentIntent.getAmount() != null) {
-            order.setAmount(paymentIntent.getAmount().intValue());
+        order.setStripePaymentIntentId(session.getPaymentIntent());
+        if (session.getAmountTotal() != null) {
+            order.setAmount(session.getAmountTotal().intValue());
         }
         orderRepository.save(order);
-        log.info("Order {} marked as PAID via webhook (payment intent: {})", order.getId(), order.getStripePaymentIntentId());
+        log.info("Order {} marked as PAID (payment intent: {})", order.getId(), order.getStripePaymentIntentId());
     }
 
     private void handlePaymentFailed(Event event) {
@@ -111,7 +109,7 @@ public class WebhookController {
                 .orElseGet(() -> new Order(orderId,
                         metadata.getOrDefault("productName", "Premium Wireless Headphones"),
                         Integer.parseInt(metadata.getOrDefault("amount", "0")),
-                        paymentIntent.getId(),
+                        null,
                         OrderStatus.PENDING,
                         Instant.now()));
 
